@@ -4,7 +4,7 @@
 
 Diese Skripte lesen ausgewählte Messwerte aus dem WVER-Messdatenportal aus und stellen sie in Python strukturiert zur Verfügung bzw. geben sie formatiert in der Konsole aus.
 
-Aktuell werden nur die fachlich interessanten Ist-Werte berücksichtigt, insbesondere:
+Aktuell werden nur diese Ist-Werte berücksichtigt:
 
 - Wasserstand
 - Abfluss
@@ -17,7 +17,7 @@ Aktuell werden nur die fachlich interessanten Ist-Werte berücksichtigt, insbeso
 - Zufluss Obersee
 - Wasserstand Obersee
 
-Planwerte und Betriebsplan-Kurven werden bewusst nicht ausgegeben.
+Die Planwerte und Betriebsplan-Kurven werden nicht ausgegeben.
 
 ## Dateistruktur
 
@@ -66,20 +66,16 @@ Aufgaben:
 
 ## Voraussetzungen
 
-Benötigt wird nur Standard-Python.
-
-Verwendete Module:
+Benötigt wird nur Standard-Python mit den Modulen:
 
 - `json`
 - `re`
 - `urllib.request`
 - `datetime`
 
-Es sind keine zusätzlichen Pakete wie `requests` erforderlich.
-
 ## Verwendung
 
-### 1. Werte extrahieren und als JSON speichern
+### Werte extrahieren und als JSON speichern
 ```bash
 python wver_extract.py
 ```
@@ -88,10 +84,12 @@ Ergebnis:
 
 - Datei `wver_interesting_latest.json` wird erzeugt
 
-### 2. Werte formatiert in der Konsole anzeigen
+### Werte formatiert in der Konsole anzeigen (
 ```bash
 python wver_print.py
 ```
+
+Dies ist auch möglich ohne vorher wver_extract.py ausgeführt zu haben.
 
 Beispielausgabe:
 ```text
@@ -104,7 +102,7 @@ abfluss                                23.03.2026 - 08:45           7,4 m³/s
 ## Logik der Auswertung
 
 ### Pegel / Wehre
-Bei Pegel- und Wehrdaten wird nur das Ende der Datei per HTTP-Range geladen.  
+Bei den Pegeldaten wird nur das Ende der Datei per HTTP-Range geladen.  
 Das ist schnell und spart Bandbreite.
 
 Diese Daten liegen typischerweise als Zeit-Wert-Paare vor.
@@ -121,7 +119,7 @@ Deshalb wird von hinten nach vorne der letzte gültige numerische Wert gesucht.
 
 ## Einheiten
 
-Falls vom WVER keine brauchbare Einheit geliefert wird, werden Fallbacks gesetzt:
+Da vom WVER nicht immer brauchbare Einheiten geliefert werden, sind Fallbacks gesetzt:
 
 - `wasserstand*` → `cm`
 - `abfluss`, `abgabe`, `zufluss*` → `m³/s`
@@ -130,8 +128,7 @@ Zusätzlich wird ein fehlerhaft kodiertes `m�/s` automatisch zu `m³/s` korrig
 
 ## Hinweise
 
-- Talsperrenwerte sind oft Tageswerte und daher nicht so aktuell wie Pegelwerte im 15-Minuten-Raster.
-- Einige Reihen wie `...seit_wwj2001` können aktueller sein als die normalen Tagesmittelreihen.
+- Die Talsperrenwerte sind Tageswerte und daher nicht so aktuell wie Pegelwerte im 15-Minuten-Raster.
 - Wenn eine Quelle vorübergehend keinen numerischen Wert enthält, wird dies als Fehler bzw. leerer Wert sichtbar.
 
 ## Empfohlene Weiterverwendung
@@ -143,21 +140,11 @@ Die Skripte eignen sich gut als Basis für:
 - Logging historischer Werte
 - zyklische Ausführung per Cron oder Task Scheduler
 
-## Empfohlener Projektaufbau
-
-```text
-projektordner/
-├── wver_stationen.py
-├── wver_extract.py
-├── wver_print.py
-└── wver_interesting_latest.json
-```
-
 ## Kurzfassung
 
 - `wver_stationen.py` = Konfiguration
 - `wver_extract.py` = Daten holen und verarbeiten
-- `wver_print.py` = formatiert ausgeben
+- `wver_print.py` = formatiert ausgeben (und ggf. holen)
 
 ## Haftungsausschluss
 
