@@ -158,3 +158,12 @@ projektordner/
 - `wver_stationen.py` = Konfiguration
 - `wver_extract.py` = Daten holen und verarbeiten
 - `wver_print.py` = formatiert ausgeben
+
+## Haftungsausschluss
+
+Diese Integration ist ein inoffizielles Projekt.  
+Es besteht keine Verbindung zum Wasserverband Eifel-Rur oder zu Home Assistant.
+
+## Lizenz
+
+MIT.
