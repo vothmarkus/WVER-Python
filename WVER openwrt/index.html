@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WVER Messwerte</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 1rem;
+      max-width: 1100px;
+      line-height: 1.4;
+    }
+    h1 {
+      margin: 0 0 0.4rem 0;
+    }
+    .meta {
+      color: #666;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    .station {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 0.9rem;
+      margin-bottom: 1rem;
+    }
+    .station h2 {
+      margin: 0 0 0.7rem 0;
+      font-size: 1.1rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    th, td {
+      text-align: left;
+      padding: 0.45rem 0.5rem;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+      word-wrap: break-word;
+    }
+    th {
+      background: #f7f7f7;
+    }
+    .error {
+      color: #a00000;
+      font-weight: bold;
+    }
+    .ok {
+      color: #0a6b0a;
+    }
+  </style>
+</head>
+<body>
+  <h1>WVER Messwerte</h1>
+  <div class="meta" id="updated">Lade Daten ...</div>
+  <div id="content"></div>
+
+  <script>
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[c]));
+    }
+
+    function formatNumber(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) {
+        return null;
+      }
+      return num.toLocaleString("de-DE", {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+      });
+    }
+
+    function formatValue(signal) {
+      if (signal.value === undefined || signal.value === null || signal.value === "") {
+        return "-";
+      }
+      const rounded = formatNumber(signal.value);
+      const unit = signal.unit ? " " + signal.unit : "";
+      return esc((rounded ?? signal.value) + unit);
+    }
+
+    function formatTimestamp(timestamp) {
+      if (!timestamp) {
+        return "-";
+      }
+
+      const d = new Date(timestamp);
+      if (!Number.isNaN(d.getTime())) {
+        return d.toLocaleString("de-DE", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+
+      const m = String(timestamp).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+      if (m) {
+        return `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}`;
+      }
+
+      return String(timestamp);
+    }
+
+    async function loadData() {
+      const updated = document.getElementById("updated");
+      const content = document.getElementById("content");
+
+      try {
+        const res = await fetch("/wver/data.json?_=" + Date.now());
+        if (!res.ok) {
+          throw new Error("HTTP " + res.status + " beim Laden von /wver/data.json");
+        }
+
+        const data = await res.json();
+        const stationEntries = Object.entries(data);
+
+        updated.innerHTML = '<span class="ok">Daten geladen</span> – ' + new Date().toLocaleString("de-DE");
+        content.innerHTML = "";
+
+        for (const [stationKey, station] of stationEntries) {
+          const box = document.createElement("div");
+          box.className = "station";
+
+          const signals = station.signals || {};
+          let rows = "";
+
+          for (const [signalKey, signal] of Object.entries(signals)) {
+            if (signal.error) {
+              rows += `
+                <tr>
+                  <td>${esc(signalKey)}</td>
+                  <td colspan="2" class="error">
+                    ${esc(signal.error)}
+                  </td>
+                </tr>
+              `;
+              continue;
+            }
+
+            rows += `
+              <tr>
+                <td>${esc(signalKey)}</td>
+                <td>${formatValue(signal)}</td>
+                <td>${esc(formatTimestamp(signal.timestamp))}</td>
+              </tr>
+            `;
+          }
+
+          box.innerHTML = `
+            <h2>${esc(station.name || stationKey)}</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Signal</th>
+                  <th>Wert</th>
+                  <th>Zeit</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows || '<tr><td colspan="3">Keine Daten</td></tr>'}
+              </tbody>
+            </table>
+          `;
+
+          content.appendChild(box);
+        }
+      } catch (err) {
+        updated.textContent = "Fehler beim Laden";
+        content.innerHTML = `
+          <p class="error">Fehler beim Laden der Daten</p>
+          <p>${esc(err.message)}</p>
+          <p>Erwartet wird: <code>/www/wver/data.json</code></p>
+        `;
+        console.error(err);
+      }
+    }
+
+    loadData();
+    setInterval(loadData, 60000);
+  </script>
+</body>
+</html>
