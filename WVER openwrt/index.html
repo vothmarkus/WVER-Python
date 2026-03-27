@@ -11,8 +11,24 @@
       max-width: 1100px;
       line-height: 1.4;
     }
-    h1 {
-      margin: 0 0 0.4rem 0;
+    .header-banner {
+      margin: 0 0 1rem 0;
+    }
+    .header-banner img {
+      display: block;
+      width: 100%;
+      max-width: 1100px;
+      height: auto;
+      border-radius: 10px;
+    }
+    .logo-row {
+      margin: 0 0 0.6rem 0;
+    }
+    .logo-row img {
+      display: block;
+      max-width: 320px;
+      width: 100%;
+      height: auto;
     }
     .meta {
       color: #666;
@@ -54,7 +70,18 @@
   </style>
 </head>
 <body>
-  <h1>WVER Messwerte</h1>
+  <div class="header-banner">
+    <a href="https://www.rureifel-kanu.de/" target="_blank" rel="noopener noreferrer">
+      <img src="https://www.rureifel-kanu.de/wp-content/uploads/2013/05/cropped-cropped-Banner_Wildwasser-01.jpg" alt="Rureifel Kanu Banner">
+    </a>
+  </div>
+
+  <div class="logo-row">
+    <a href="https://wver.de/" target="_blank" rel="noopener noreferrer">
+      <img src="https://wver.de/wp-content/uploads/2025/08/wver-logo.png" alt="WVER Logo">
+    </a>
+  </div>
+
   <div class="meta" id="updated">Lade Daten ...</div>
   <div id="content"></div>
 
@@ -64,7 +91,7 @@
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
-        '"': "&quot;",
+        "\"": "&quot;",
         "'": "&#39;"
       }[c]));
     }
