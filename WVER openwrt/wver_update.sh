@@ -1,7 +1,8 @@
 #!/bin/sh
 
 OUT="/www/wver/data.json"
-TMP="/tmp/wver.$$"
+TMP_FETCH="/tmp/wver.$$"
+TMP_OUT="/www/wver/data.json.tmp"
 
 mkdir -p /www/wver
 
@@ -12,7 +13,7 @@ json_escape() {
 normalize_unit() {
   unit="$1"
   case "$unit" in
-    *m*/*s*|*m³/s*|*m3/s*|*m�/s*)
+    *m³/s*|*m�/s*|*m3/s*)
       printf 'm³/s'
       ;;
     *)
@@ -33,14 +34,7 @@ infer_unit() {
   esac
 
   if [ -n "$current_unit" ]; then
-    case "$current_unit" in
-      *m*/*s*|*m³/s*|*m3/s*|*m�/s*)
-        printf 'm³/s'
-        ;;
-      *)
-        printf '%s' "$current_unit"
-        ;;
-    esac
+    printf '%s' "$current_unit"
     return
   fi
 
@@ -68,12 +62,12 @@ parse_pegel_tail() {
   PARSED_PARSER="range_tail"
   PARSED_ERROR=""
 
-  wget -q -O "$TMP" "$fetch_url" || {
+  wget -q -O "$TMP_FETCH" "$fetch_url" || {
     PARSED_ERROR="Download fehlgeschlagen"
     return 1
   }
 
-  LINE=$(grep '\["' "$TMP" | tail -n 1)
+  LINE=$(grep '\["' "$TMP_FETCH" | tail -n 1)
 
   if [ -z "$LINE" ]; then
     PARSED_ERROR="Kein [timestamp, value]-Paar gefunden"
@@ -101,12 +95,12 @@ parse_talsperre_json() {
   PARSED_PARSER="full_json_last_valid"
   PARSED_ERROR=""
 
-  wget -q -O "$TMP" "$fetch_url" || {
+  wget -q -O "$TMP_FETCH" "$fetch_url" || {
     PARSED_ERROR="Download fehlgeschlagen"
     return 1
   }
 
-  PARSED_UNIT=$(sed -n 's/.*"ts_unitsymbol"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$TMP" | head -n 1)
+  PARSED_UNIT=$(sed -n 's/.*"ts_unitsymbol"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$TMP_FETCH" | head -n 1)
   PARSED_UNIT=$(normalize_unit "$PARSED_UNIT")
 
   LAST_ROW=$(
@@ -150,7 +144,7 @@ parse_talsperre_json() {
       END {
         print last_ts ";" last_val ";" last_abs
       }
-    ' "$TMP"
+    ' "$TMP_FETCH"
   )
 
   PARSED_TS=$(echo "$LAST_ROW" | cut -d';' -f1)
@@ -161,6 +155,8 @@ parse_talsperre_json() {
     PARSED_ERROR="Kein gültiger Wert in data gefunden"
     return 1
   fi
+
+  PARSED_ABS=$(printf '%s' "$PARSED_ABS" | tr -d '[:space:]"')
 
   case "$PARSED_ABS" in
     ""|"-"|null)
@@ -230,7 +226,6 @@ write_signal_json() {
   printf '{\n'
 
   current_station=""
-  current_name=""
   first_station=1
   first_signal=1
 
@@ -251,7 +246,6 @@ write_signal_json() {
       printf '    "signals": {\n'
 
       current_station="$station_key"
-      current_name="$station_name"
       first_station=0
       first_signal=1
     fi
@@ -282,8 +276,10 @@ STATIONS
   fi
 
   printf '}\n'
-} > "$OUT"
+} > "$TMP_OUT" || exit 1
 
-rm -f "$TMP"
+mv "$TMP_OUT" "$OUT"
+
+rm -f "$TMP_FETCH"
 
 echo "Gespeichert als: $OUT"

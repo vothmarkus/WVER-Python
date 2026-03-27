@@ -64,53 +64,25 @@
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
-        "\"": "&quot;",
+        '"': "&quot;",
         "'": "&#39;"
       }[c]));
     }
 
-    function formatNumber(value) {
-      const num = Number(value);
-      if (!Number.isFinite(num)) {
-        return null;
-      }
-      return num.toLocaleString("de-DE", {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1
-      });
-    }
-
     function formatValue(signal) {
-      if (signal.value === undefined || signal.value === null || signal.value === "") {
-        return "-";
-      }
-      const rounded = formatNumber(signal.value);
+      const raw = signal?.value;
+      if (raw === undefined || raw === null || raw === "") return "-";
+      const num = Number(raw);
+      const text = Number.isFinite(num) ? num.toFixed(1) : String(raw);
       const unit = signal.unit ? " " + signal.unit : "";
-      return esc((rounded ?? signal.value) + unit);
+      return esc(text) + unit;
     }
 
-    function formatTimestamp(timestamp) {
-      if (!timestamp) {
-        return "-";
-      }
-
-      const d = new Date(timestamp);
-      if (!Number.isNaN(d.getTime())) {
-        return d.toLocaleString("de-DE", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit"
-        });
-      }
-
-      const m = String(timestamp).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-      if (m) {
-        return `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}`;
-      }
-
-      return String(timestamp);
+    function formatTimestamp(ts) {
+      if (!ts) return "-";
+      const m = String(ts).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+      if (!m) return esc(ts);
+      return `${m[3]}.${m[2]}.${m[1]} ${m[4]}:${m[5]}`;
     }
 
     async function loadData() {
@@ -141,9 +113,7 @@
               rows += `
                 <tr>
                   <td>${esc(signalKey)}</td>
-                  <td colspan="2" class="error">
-                    ${esc(signal.error)}
-                  </td>
+                  <td colspan="2" class="error">${esc(signal.error)}</td>
                 </tr>
               `;
               continue;
@@ -153,7 +123,7 @@
               <tr>
                 <td>${esc(signalKey)}</td>
                 <td>${formatValue(signal)}</td>
-                <td>${esc(formatTimestamp(signal.timestamp))}</td>
+                <td>${esc(formatTimestamp(signal.timestamp || "-"))}</td>
               </tr>
             `;
           }
